@@ -55,12 +55,18 @@ const App: React.FC = () => {
                         type="text"
                         icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                         onClick={() => setCollapsed(!collapsed)}
-                        style={{
+                        style={collapsed ? {
                             fontSize: "16px",
                             width: 64,
                             height: 64,
-                            color: '#fff',
+                            color: 'rgba(255, 255, 255, 0.87)',
                             marginLeft: '8px',
+                        } : {
+                            fontSize: "16px",
+                            width: 64,
+                            height: 64,
+                            color: 'rgba(255, 255, 255, 0.87)',
+                            marginLeft: '3px',
                         }}
                     />
                     <div className="demo-logo-vertical" />
