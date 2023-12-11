@@ -167,11 +167,11 @@ const DataSource = () => {
                         <Radio.Button value="DS">DS</Radio.Button>
                     </Radio.Group>
                 </Form.Item>
-                <Form.Item label="状态">
+                {/* <Form.Item label="状态">
                     <Select style={{ width: '80px' }} options={[{ label: '全部', value: '' }]} />
-                </Form.Item>
+                </Form.Item> */}
             </Form>
-            <Button type="primary" style={{ position: 'absolute', right: '16px', top: '16px' }} >搜索</Button>
+            {/* <Button type="primary" style={{ position: 'absolute', right: '16px', top: '16px' }} >搜索</Button> */}
         </div>
         <div style={{ margin: '16px', padding: '16px', backgroundColor: '#fff' }} >
             <Table
