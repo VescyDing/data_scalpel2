@@ -26,7 +26,7 @@ interface DataType {
 }
 
 interface TableParams {
-    pagination?: TablePaginationConfig;
+    pagination: TablePaginationConfig;
     sortField?: string;
     sortOrder?: string;
     filters?: Record<string, FilterValue>;
@@ -45,7 +45,7 @@ const DataSource = () => {
         },
     });
     const navigate = useNavigate()
-    let filterData = [];
+    let filterData: any[] = [];
 
     const columns: ColumnsType<DataType> = [
         {
@@ -104,7 +104,7 @@ const DataSource = () => {
         },
     ];
 
-    const onFormValuesChange = (changedValues, allValues) => {
+    const onFormValuesChange = (_changedValues, allValues) => {
         filterData = [];
         _.each(allValues, (value, key) => {
             if (!_.isEmpty(value)) {
@@ -277,8 +277,8 @@ const DataSource = () => {
                                 dataSource={data}
                                 pagination={tableParams.pagination}
                                 loading={loading}
-                                onChange={handleTableChange}
-                                scroll={{ y: height - 140 }}
+                                onChange={handleTableChange as any}
+                                scroll={{ y: height as number - 140 }}
                             />
                         </div>
                     }
