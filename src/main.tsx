@@ -11,11 +11,9 @@ import _ from 'lodash';
 dayjs.locale('zh-cn');
 _.set(window, 'apiHost', 'http://home.superhuang.cn:10000');
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <ConfigProvider locale={zhCN}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </ConfigProvider>
-  </React.StrictMode>
+  <ConfigProvider locale={zhCN}>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </ConfigProvider>
 );

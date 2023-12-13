@@ -34,7 +34,11 @@ const App: React.FC = () => {
             routes.forEach((item) => {
                 const path = item.route.path;
                 if (path) {
-                    pathArr.push(path);
+                    if (item.route.hidden) {
+                        pathArr.push('/' + path.split('/')[1]);
+                    } else {
+                        pathArr.push(path);
+                    }
                 }
             })
         }
@@ -76,7 +80,7 @@ const App: React.FC = () => {
                         // 根据url地址实现选中高亮
                         defaultSelectedKeys={defaultSelectedKeys}
                         defaultOpenKeys={defaultOpenKeys}
-                        items={_.map(routers, router => ({ ...router, key: router.path }))}
+                        items={_.map(_.filter(routers, route => !route?.hidden), route => ({ ...route, key: route.path }))}
                         onClick={(e) => {
                             setDefaultSelectedKeys([e.key]);
                             setDefaultOpenKeys([e.key]);

@@ -1,24 +1,28 @@
 import React from 'react';
-import { Space, Table, Tag, Button, Form, Input, Radio, Select } from 'antd';
+import { Space, Table, Tag, Button, Form, Input, Radio, Modal, Tree } from 'antd';
+import { ExclamationCircleFilled } from '@ant-design/icons';
 import { useState, useEffect } from "react";
 import qs from 'qs';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
 import axios from 'axios';
 import _ from 'lodash';
+import { useNavigate } from 'react-router-dom';
+import { handleResponse } from "../../api/Message";
+import { SizeMe } from 'react-sizeme'
 
 const apiHost = _.get(window, 'apiHost')
 
 interface DataType {
-    name: {
-        first: string;
-        last: string;
-    };
-    gender: string;
-    email: string;
-    login: {
-        uuid: string;
-    };
+    category: string,
+    code: string,
+    fullType: string,
+    id: string,
+    manager: string,
+    metric: unknown,
+    name: string,
+    props: object,
+    type: string,
 }
 
 interface TableParams {
@@ -28,34 +32,6 @@ interface TableParams {
     filters?: Record<string, FilterValue>;
 }
 
-const columns: ColumnsType<DataType> = [
-    {
-        title: '名称',
-        dataIndex: 'name',
-        sorter: true,
-    },
-    {
-        title: '类型',
-        dataIndex: 'type',
-    },
-    {
-        title: '管理员',
-        dataIndex: 'manager',
-    },
-    {
-        title: '目录',
-        dataIndex: 'category',
-    },
-    {
-        title: 'CODE',
-        dataIndex: 'code',
-    },
-    {
-        title: 'FULL_TYPE',
-        dataIndex: 'fullType',
-    },
-];
-
 const DataSource = () => {
     const [form] = Form.useForm();
     const [data, setData] = useState<DataType[]>();
@@ -64,11 +40,69 @@ const DataSource = () => {
         pagination: {
             current: 1,
             pageSize: 10,
-            pageSizeOptions: [10],
+            pageSizeOptions: [5, 10, 20, 50],
             total: 0,
         },
     });
+    const navigate = useNavigate()
     let filterData = [];
+
+    const columns: ColumnsType<DataType> = [
+        {
+            title: '名称',
+            dataIndex: 'name',
+            sorter: true,
+        },
+        {
+            title: '类型',
+            dataIndex: 'type',
+        },
+        {
+            title: '管理员',
+            dataIndex: 'manager',
+        },
+        {
+            title: '目录',
+            dataIndex: 'category',
+        },
+        {
+            title: 'CODE',
+            dataIndex: 'code',
+        },
+        {
+            title: 'FULL_TYPE',
+            dataIndex: 'fullType',
+        },
+        {
+            title: '操作',
+            dataIndex: 'action',
+            fixed: 'right',
+            render: (_, record) => (
+                <Space size="small">
+                    <Button type='link' onClick={() => navigate(`/data_source/edit/${record.id}`)} >编辑</Button>
+                    <Button type='link' onClick={() => Modal.confirm({
+                        title: <span>您确定要删除数据源<Tag color="#108ee9" style={{ margin: '0 7px' }} >{record.name}</Tag>吗？</span>,
+                        icon: <ExclamationCircleFilled />,
+                        content: '此操作不可逆。',
+                        okType: 'danger',
+                        centered: true,
+                        async onOk() {
+                            return new Promise((resolve, reject) => {
+                                axios.delete(`${apiHost}/api/v1/datasources/${record.id}`).then(res => {
+                                    fetchData();
+                                    if (handleResponse(res)) {
+                                        resolve(res);
+                                    } else {
+                                        reject(res);
+                                    }
+                                })
+                            }).catch((error) => console.error(error));
+                        },
+                    })} danger >删除</Button>
+                </Space>
+            ),
+        },
+    ];
 
     const onFormValuesChange = (changedValues, allValues) => {
         filterData = [];
@@ -109,6 +143,7 @@ const DataSource = () => {
             limit: (tableParams.pagination.current as number - 1) + ',' + '10',
             search: _.join(filterData, ' and ')
         })}`) as any;
+        handleResponse(res, true);
         setData(res.data.data.content);
         setLoading(false);
         setTableParams({
@@ -121,7 +156,21 @@ const DataSource = () => {
         });
     };
 
+
+
+    const fetchData2 = async () => {
+        setLoading(true);
+        const res = await axios.get(`${apiHost}/api/v1/catalogs?${qs.stringify({
+            type: 'DATASOURCE',
+            tree: true,
+        })}`) as any;
+        handleResponse(res, true);
+        _treeData(res?.data?.data)
+        setLoading(false);
+    };
+
     useEffect(() => {
+        fetchData2();
         fetchData();
     }, [tableParams.pagination?.current]);
 
@@ -141,6 +190,28 @@ const DataSource = () => {
             setData([]);
         }
     };
+
+    const [expandedKeys, setExpandedKeys] = useState<React.Key[]>(['0-0-0', '0-0-1']);
+    const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
+    const [autoExpandParent, setAutoExpandParent] = useState<boolean>(true);
+    const [treeData, _treeData] = useState([]);
+
+
+    const onExpand = (expandedKeysValue: React.Key[]) => {
+        console.log('onExpand', expandedKeysValue);
+        // if not set autoExpandParent to false, if children expanded, parent can not collapse.
+        // or, you can remove all expanded children keys.
+        setExpandedKeys(expandedKeysValue);
+        setAutoExpandParent(false);
+    };
+
+    const onSelect = (selectedKeysValue: React.Key[], info: any) => {
+        console.log('onSelect', info);
+        setSelectedKeys(selectedKeysValue);
+    };
+
+
+
     return <>
         <div style={{ height: '66px', backgroundColor: '#fff', padding: '16px', position: 'relative' }} >
             <Form
@@ -171,17 +242,48 @@ const DataSource = () => {
                     <Select style={{ width: '80px' }} options={[{ label: '全部', value: '' }]} />
                 </Form.Item> */}
             </Form>
-            {/* <Button type="primary" style={{ position: 'absolute', right: '16px', top: '16px' }} >搜索</Button> */}
+            <div style={{ position: 'absolute', right: '16px', top: '16px' }} >
+                <Button type="primary" onClick={() => navigate('/data_source/create')} >新增</Button>
+            </div>
         </div>
-        <div style={{ margin: '16px', padding: '16px', backgroundColor: '#fff' }} >
-            <Table
-                columns={columns}
-                rowKey="id"
-                dataSource={data}
-                pagination={tableParams.pagination}
-                loading={loading}
-                onChange={handleTableChange}
-            />
+        <div style={{ display: 'flex', flexDirection: 'row', height: 'calc(100% - 100px)' }} >
+            <div style={{ margin: '16px', marginRight: 0, padding: '16px', backgroundColor: '#fff', width: '300px', height: '100%' }} >
+                <Tree
+                    // checkable
+                    onExpand={onExpand}
+                    expandedKeys={expandedKeys}
+                    autoExpandParent={autoExpandParent}
+                    onSelect={onSelect}
+                    selectedKeys={selectedKeys}
+                    treeData={treeData}
+                    fieldNames={{
+                        title: 'name',
+                        key: 'id',
+                    }}
+                />
+            </div>
+            <SizeMe
+                monitorHeight
+                noPlaceholder
+                refreshMode='debounce'
+            >
+                {
+                    ({ size }) => {
+                        const { height = 720 } = size;
+                        return <div style={{ margin: '16px', padding: '16px', backgroundColor: '#fff', width: 'calc(100% - 300px)', height: '100%' }} >
+                            <Table
+                                columns={columns}
+                                rowKey="id"
+                                dataSource={data}
+                                pagination={tableParams.pagination}
+                                loading={loading}
+                                onChange={handleTableChange}
+                                scroll={{ y: height - 140 }}
+                            />
+                        </div>
+                    }
+                }
+            </SizeMe>
         </div>
     </>
 };
