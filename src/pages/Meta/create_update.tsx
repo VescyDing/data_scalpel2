@@ -122,7 +122,7 @@ const Create = () => {
                                 <Input disabled={loading} />
                             </Form.Item>
                             <Form.Item label="数据库类型" name="type" rules={[{ required: true }]}>
-                                <Select options={_.get(CODEDICT, DBType) ?? []} disabled={loading} />
+                                <Select options={_.get(CODEDICT, DBType) ?? []} />
                             </Form.Item>
                         </>
                     }

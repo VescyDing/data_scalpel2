@@ -3,14 +3,19 @@ import { lazy, ReactNode, Suspense } from "react";
 import { Spin } from 'antd';
 import {
     DatabaseOutlined,
-    BankOutlined
+    BankOutlined,
+    AppstoreOutlined,
 } from "@ant-design/icons";
-// import Login from "../pages/Login";
 
 // 用懒加载实现优化
 const Main = lazy(() => import("../pages/Main"));
 const DataSource = lazy(() => import("../pages/DataSource"));
 const DataSourceCreate = lazy(() => import("../pages/DataSource/create"));
+const Meta = lazy(() => import("../pages/Meta"));
+const MetaCreate = lazy(() => import("../pages/Meta/create"));
+const MetaCreateMeta = lazy(() => import("../pages/Meta/create_meta"));
+const MetaCreateUpdate = lazy(() => import("../pages/Meta/create_update"));
+
 
 // 切换页面会出现闪屏现象
 // 解决思路：公共页面不采用懒加载的方式 并在App.tsx去除Suspense的包裹
@@ -48,6 +53,32 @@ export const routers: Array<RouteObject & { icon?: any, label?: string, hidden?:
     {
         path: "/data_source/edit/:id",
         element: lazyLoad(<DataSourceCreate />),
+        hidden: true,
+    },
+    {
+        path: "/meta",
+        element: lazyLoad(<Meta />),
+        icon: <AppstoreOutlined />,
+        label: "资产管理",
+    },
+    {
+        path: "/meta/create",
+        element: lazyLoad(<MetaCreate />),
+        hidden: true,
+    },
+    {
+        path: "/meta/edit/:id",
+        element: lazyLoad(<MetaCreate />),
+        hidden: true,
+    },
+    {
+        path: "/meta/create_meta",
+        element: lazyLoad(<MetaCreateMeta />),
+        hidden: true,
+    },
+    {
+        path: "/meta/create_update",
+        element: lazyLoad(<MetaCreateUpdate />),
         hidden: true,
     },
 ];

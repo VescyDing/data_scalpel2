@@ -3,12 +3,12 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Space, Table, Tag, Button, Form, Input, Radio, Select, message, Steps, theme, Divider, Flex, Card, InputNumber, } from 'antd';
 import _ from 'lodash';
-import svg1 from '../../assets/数据库.svg';
 import axios from "axios";
 import { handleResponse } from "../../api/Message";
+import qs from 'qs';
 
 const Create = () => {
-    useEffect(() => { }, []);
+
     const navigate = useNavigate();
     const params = useParams();
     const [form] = Form.useForm();
@@ -17,93 +17,32 @@ const Create = () => {
     const [edit, _edit] = useState(_.includes(useLocation().pathname, 'edit'));
     const { token } = theme.useToken();
     const [current, setCurrent] = useState(0);
+    const [catalog, _catalog] = useState([]);
+    const [fromState, _fromState] = useState({});
+    const [dataSource, _dataSource] = useState([]);
     let detail: any;
 
     const apiHost = _.get(window, 'apiHost')
-    const JDBC = [{
-        label: 'JDBC关系数据库',
-        value: 'JDBC'
-    }];
-    const Interface = ['HTTP', 'WMTS', 'FeatureService', 'MapService'];
-    const CODEDICT = {
-        'JDBC': [
-            { label: 'MySQL', value: 'MYSQL' },
-            { label: 'PostgreSQL', value: 'POSTGRESQL' },
-            { label: 'Oracle', value: 'ORACLE' },
-            { label: 'SQLServer', value: 'SQLSERVER' },
-        ],
-    }
-
-    /* const CODEDICT = {
-        'MySQL': [
-            { label: 'MYSQL', value: 'MYSQL' },
-            { label: 'OCEANBASE_MYSQL', value: 'OCEANBASE_MYSQL' },
-        ],
-        'PostgreSQL': [
-            { label: 'POSTGRESQL', value: 'POSTGRESQL' },
-        ],
-        'Oracle': [
-            { label: 'ORACLE', value: 'ORACLE' },
-        ],
-        'SQLServer': [
-            { label: 'SQLSERVER', value: 'SQLSERVER' },
-            { label: 'SDE_POST_GIS,', value: 'SDE_POST_GIS,' },
-            { label: 'SDE_POSTGRESQL_ST_GEOMETRY', value: 'SDE_POSTGRESQL_ST_GEOMETRY' },
-        ],
-        '达梦': [
-            { label: 'DAMENG', value: 'DAMENG' },
-        ],
-        'TDengine': [
-            { label: 'TD_ENGINE', value: 'TD_ENGINE' },
-            { label: 'TD_ENGINE_RS', value: 'TD_ENGINE_RS' },
-        ],
-    }
-    */
 
     const layout = {
         labelCol: { span: 8 },
         wrapperCol: { span: 16 },
     };
 
+    const getCatalogByType = async (type) => {
+        _loading(true);
+        const res = await axios.get(`${apiHost}/api/v1/catalogs?${qs.stringify({
+            type,
+            tree: true,
+        })}`) as any;
+        handleResponse(res, true);
+        _loading(false);
+        _catalog(res?.data?.data)
+    }
+
     const steps = [
         {
-            title: '选择类型',
-            content: <div>
-                <Divider orientation="left">关系数据库</Divider>
-                <Flex wrap="wrap" gap="large">
-                    {_.map(JDBC, (item) => (<Card
-                        hoverable
-                        style={{ width: 180 }}
-                        cover={<img alt="example" src={svg1} style={{ margin: 14, width: 'calc(100% - 28px)' }}
-                            onClick={() => {
-                                _DBType(item.value);
-                                setCurrent(current + 1);
-                            }}
-                        />}
-                    >
-                        <Card.Meta title={item.label} />
-                    </Card>))}
-                </Flex>
-                <Divider orientation="left">接口</Divider>
-                <Flex wrap="wrap" gap="large">
-                    {_.map(Interface, (item: string) => (<Card
-                        hoverable
-                        style={{ width: 180 }}
-                        cover={<img alt="example" src={svg1} style={{ margin: 14, width: 'calc(100% - 28px)' }}
-                            onClick={() => {
-                                _DBType(item);
-                                setCurrent(current + 1);
-                            }}
-                        />}
-                    >
-                        <Card.Meta title={item} />
-                    </Card>))}
-                </Flex>
-                <Divider orientation="left">MQ</Divider>
-            </div>,
-        },
-        {
-            title: '数据源参数',
+            title: '创建模型',
             content: <div>
                 <Form
                     {...layout}
@@ -112,39 +51,67 @@ const Create = () => {
                     labelAlign="right"
                     labelWrap
                     style={{ maxWidth: 600, margin: '0 auto' }}
+                    onFieldsChange={(...args) => _fromState(args[1])}
                 >
                     <Form.Item label="名称" name="name" rules={[{ required: true }]}>
                         <Input disabled={loading} />
                     </Form.Item>
+                    <Form.Item label="别名" name="cnName" rules={[{ required: true }]}>
+                        <Input disabled={loading} />
+                    </Form.Item>
+                    <Form.Item label="目录层级" name="catalogType" rules={[{ required: true }]} >
+                        <Select options={[
+                            { label: '原始数据层', value: 'RAW' },
+                            { label: '加工数据层', value: 'DW' },
+                            { label: '应用数据层', value: 'APP' },
+                        ]} onChange={getCatalogByType} disabled={loading} />
+                    </Form.Item>
+                    <Form.Item label="目录" name="catalogId" rules={[{ required: true }]}>
+                        <Select options={catalog} disabled={!catalog?.length || loading} fieldNames={{
+                            label: 'name',
+                            value: 'id',
+                        }} loading={loading} />
+                    </Form.Item>
                     {
-                        edit ? null : <>
-                            <Form.Item label="简称" name="code" rules={[{ required: true }]} >
-                                <Input disabled={loading} />
+                        _.find(fromState, { name: ['catalogType'] })?.value == 'APP' &&
+                        <Form.Item label="存储" name="datasourceId" rules={[{ required: true }]}>
+                            <Select options={dataSource} fieldNames={{
+                                label: 'name',
+                                value: 'id',
+                            }} disabled={loading} />
+                        </Form.Item>
+                    }
+                    <Form.Item label="模型类型" name="entityType" rules={[{ required: true }]}>
+                        <Select options={[
+                            { label: '普通模型', value: 'MODEL' },
+                            { label: '空间模型', value: 'MODEL_SPATIAL' },
+                        ]} disabled={loading} />
+                    </Form.Item>
+                    {
+                        _.find(fromState, { name: ['entityType'] })?.value == 'MODEL_SPATIAL' && <>
+                            <Form.Item label="空间参考" name="wkId" rules={[{ required: true }]}>
+                                <Select options={[
+                                    { label: 'CGCS2000(EPSG:4490)', value: '4490' },
+                                    { label: 'WGS 84 / Pseudo-Mercator(EPSG:3857)', value: '3857' },
+                                    { label: 'World Geodetic System 1984(EPSG:4326)', value: '4326' },
+                                ]} disabled={loading} />
                             </Form.Item>
-                            <Form.Item label="数据库类型" name="type" rules={[{ required: true }]}>
-                                <Select options={_.get(CODEDICT, DBType) ?? []} disabled={loading} />
+                            <Form.Item label="空间类型" name="geometryType" rules={[{ required: true }]}>
+                                <Select options={[
+                                    { label: '点', value: 'Point' },
+                                    { label: '线', value: 'LineString' },
+                                    { label: '面', value: 'Polygon' },
+                                ]} disabled={loading} />
                             </Form.Item>
                         </>
                     }
-                    <Form.Item label="地址" name="password" rules={[{ required: true }]}>
-                        <Input disabled={loading} />
-                    </Form.Item>
-                    <Form.Item label="端口" name="port" rules={[{ required: true }]}>
-                        <InputNumber style={{ width: '100%' }} />
-                    </Form.Item>
-                    <Form.Item label="数据库" name="database" rules={[{ required: true }]}>
-                        <Input disabled={loading} />
-                    </Form.Item>
-                    <Form.Item label="用户名" name="username" rules={[{ required: true }]}>
-                        <Input disabled={loading} />
-                    </Form.Item>
-                    <Form.Item label="密码" name="password" rules={[{ required: true }]}>
-                        <Input.Password disabled={loading} />
-                    </Form.Item>
-                    <Form.Item label="高级参数" name="options">
-                        <Input.TextArea disabled={loading} placeholder="输入Key-Value键值对形式的高级参数，json格式。" />
-                    </Form.Item>
                 </Form>
+            </div>,
+        },
+        {
+            title: '模型字段',
+            content: <div>
+
             </div>,
         },
     ];
@@ -160,12 +127,20 @@ const Create = () => {
         })
     }
 
+    const getDataSource = async () => {
+        const res = await axios.get(`${apiHost}/api/v1/datasources?search=category:APP and type:JDBC`);
+        handleResponse(res, true);
+        _dataSource(res.data.data.content);
+    }
+
     if (edit) {
         steps.splice(0, 1);
         getDetail();
     }
 
-
+    useEffect(() => {
+        getDataSource();
+    }, []);
 
     const next = () => {
         setCurrent(current + 1);
